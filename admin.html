@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Создание заказа</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+        .container { background: white; padding: 20px; max-width: 600px; margin: auto; border-radius: 10px; }
+        input, button { width: 100%; padding: 10px; margin-top: 10px; font-size: 16px; }
+        h2 { text-align: center; }
+        .result { margin-top: 20px; text-align: center; }
+        img { max-width: 200px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Создание нового заказа</h2>
+
+    <input type="text" id="client_name" placeholder="ФИО клиента">
+    <input type="text" id="pickup_code" placeholder="Код для выдачи (например, 4721)">
+    <input type="text" id="pvz" placeholder="Адрес ПВЗ">
+    <input type="date" id="expires" placeholder="Срок хранения">
+
+    <button onclick="createOrder()">Создать заказ</button>
+
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+function createOrder() {
+    const client_name = document.getElementById("client_name").value;
+    const pickup_code = document.getElementById("pickup_code").value;
+    const pvz = document.getElementById("pvz").value;
+    const expires = document.getElementById("expires").value;
+
+    fetch("http://localhost:5000/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_name, pickup_code, pvz, expires })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const qrData = encodeURIComponent(JSON.stringify({ id: data.order_id, client_name }));
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${qrData}&size=200x200`;
+            document.getElementById("result").innerHTML = `
+                <p>Заказ №${data.order_id} создан успешно</p>
+                <img src="${qrUrl}" alt="QR">
+            `;
+        }
+    });
+}
+</script>
+
+</body>
+</html>
