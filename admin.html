@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Админ — Создание заказа</title>
+<style>
+  body { font-family: sans-serif; background: #f6f7fb; padding: 24px; }
+  .card { background: #fff; max-width: 720px; margin: auto; padding: 24px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+  input, button { width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; }
+  .qr { text-align: center; margin-top: 16px; }
+  img { max-width: 220px; }
+</style>
+</head>
+<body>
+
+<script>
+  const REQUIRED_PASSWORD = "klondike2025";
+  const entered = prompt("🔒 Введите пароль для доступа:");
+  if (entered !== REQUIRED_PASSWORD) {
+    alert("⛔ Неверный пароль");
+    location.href = "https://google.com";
+  }
+</script>
+
+<div class="card">
+  <h2>Создание нового заказа</h2>
+  <input id="client_name" placeholder="ФИО клиента">
+  <input id="pickup_code" placeholder="Код выдачи (например, 4721)">
+  <input id="pvz" placeholder="Адрес ПВЗ">
+  <input id="expires" type="date" placeholder="Срок хранения (необязательно)">
+  <button onclick="createOrder()">Создать заказ</button>
+  <div id="result" class="qr"></div>
+</div>
+<script>
+const API = "http://localhost:5000";
+function createOrder(){
+  const payload = {
+    client_name: document.getElementById("client_name").value.trim(),
+    pickup_code: document.getElementById("pickup_code").value.trim(),
+    pvz: document.getElementById("pvz").value.trim(),
+    expires: document.getElementById("expires").value
+  };
+  fetch(API + "/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).then(r => r.json()).then(d => {
+    if(!d.success) { alert("Ошибка: " + (d.error || "не удалось создать")); return; }
+    const q = encodeURIComponent(JSON.stringify(d.qr_payload));
+    const url = `https://api.qrserver.com/v1/create-qr-code/?data=${q}&size=220x220`;
+    document.getElementById("result").innerHTML = `
+      <p>Заказ № <b>${d.order_id}</b> создан</p>
+      <img src="${url}" alt="QR">
+      <div><button onclick="window.print()">Печать</button></div>
+    `;
+  }).catch(e => alert("Ошибка сети: " + e));
+}
+</script>
+</body>
+</html>

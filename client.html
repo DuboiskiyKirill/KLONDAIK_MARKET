@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Личный кабинет</title>
+<style>
+  body { font-family: sans-serif; background:#f6f7fb; padding:24px; text-align: center; }
+  .card { background:#fff; max-width:700px; margin:auto; padding:24px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
+  input, button { padding: 12px; margin: 6px; font-size: 16px; }
+  img { max-width: 220px; display:block; margin: 10px auto; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Мой заказ</h2>
+  <input id="order_id" placeholder="ID заказа">
+  <button onclick="load()">Показать статус</button>
+  <div id="info"></div>
+</div>
+<script>
+const API="http://localhost:5000";
+function load(){
+  const id=document.getElementById("order_id").value;
+  fetch(API+"/order/"+id).then(r=>r.json()).then(o=>{
+    if(!o||o.success===false){ document.getElementById("info").innerText="Заказ не найден"; return; }
+    const qr=encodeURIComponent(JSON.stringify({id:o.id,client_name:o.client_name,pickup_code:o.pickup_code}));
+    const url=`https://api.qrserver.com/v1/create-qr-code/?data=${qr}&size=220x220`;
+    document.getElementById("info").innerHTML=`
+      <p><b>Клиент:</b> ${o.client_name}</p>
+      <p><b>ПВЗ:</b> ${o.pvz}</p>
+      <p><b>Код:</b> ${o.pickup_code}</p>
+      <p><b>Статус:</b> ${o.status} | <b>Оплачен:</b> ${o.paid?'Да':'Нет'}</p>
+      <img src="${url}" alt="QR">
+      ${o.paid?'':`<button onclick="pay(${o.id})">💳 Оплатить (заглушка)</button>`}
+    `;
+  }).catch(()=>{ document.getElementById("info").innerText="Ошибка сети"; });
+}
+function pay(id){
+  fetch(API+"/payment_callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order_id:id})})
+    .then(r=>r.json()).then(d=>{ if(d.success){ alert("Оплата успешно проведена"); load(); }});
+}
+</script>
+</body>
+</html>

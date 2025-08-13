@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Админ‑панель заказов</title>
+<style>
+  body { font-family: sans-serif; background:#f6f7fb; padding:24px; }
+  .top { text-align:center; margin-bottom: 12px; }
+  input, button { padding:10px; font-size:16px; margin:4px; }
+  table { width:100%; border-collapse: collapse; background:#fff; }
+  th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+  th { background:#f0f0f0; }
+</style>
+</head>
+<body>
+
+<script>
+  const REQUIRED_PASSWORD = "klondike2025";
+  const entered = prompt("🔒 Введите пароль для доступа:");
+  if (entered !== REQUIRED_PASSWORD) {
+    alert("⛔ Неверный пароль");
+    location.href = "https://google.com";
+  }
+</script>
+
+<h2>Список заказов</h2>
+<div class="top">
+  <input id="q" placeholder="Поиск по ФИО/ID/ПВЗ" onkeyup="filter()">
+  <button onclick="exportCSV()">📤 Экспорт в CSV</button>
+  <button onclick="load()">🔄 Обновить</button>
+</div>
+<table id="tbl">
+  <thead>
+    <tr>
+      <th>ID</th><th>Клиент</th><th>Код</th><th>ПВЗ</th><th>Срок хранения</th><th>Создан</th><th>Статус</th><th>Оплата</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+<script>
+const API="http://localhost:5000";
+function load(){
+  fetch(API+"/orders").then(r=>r.json()).then(rows=>{
+    const tb=document.querySelector("#tbl tbody"); tb.innerHTML="";
+    rows.forEach(o=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${o.id}</td><td>${o.client_name}</td><td>${o.pickup_code}</td><td>${o.pvz}</td><td>${o.expires||''}</td><td>${o.created_at}</td><td>${o.status}</td><td>${o.paid?'✅':'❌'}</td>`;
+      tb.appendChild(tr);
+    });
+  });
+}
+function filter(){
+  const q=document.getElementById("q").value.toLowerCase();
+  document.querySelectorAll("#tbl tbody tr").forEach(tr=>{ tr.style.display = tr.innerText.toLowerCase().includes(q) ? "" : "none"; });
+}
+function exportCSV(){
+  let csv="ID;Клиент;Код;ПВЗ;Срок хранения;Создан;Статус;Оплата\n";
+  document.querySelectorAll("#tbl tbody tr").forEach(tr=>{
+    const cols=[...tr.querySelectorAll("td")].map(td=>td.innerText.replace(/;/g,","));
+    csv+=cols.join(";")+"\n";
+  });
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="orders.csv"; document.body.appendChild(a); a.click(); a.remove();
+}
+window.onload=load;
+</script>
+</body>
+</html>

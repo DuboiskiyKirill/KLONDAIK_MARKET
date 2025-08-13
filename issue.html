@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>ПВЗ — Выдача</title>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<style>
+  body { font-family: sans-serif; background:#f6f7fb; padding:24px; }
+  .card { background:#fff; max-width:700px; margin:auto; padding:24px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
+  #reader { width: 320px; margin: 12px auto; }
+  .status { text-align:center; font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Сканируйте QR клиента (выдача)</h2>
+  <div id="reader"></div>
+  <p class="status" id="status"></p>
+</div>
+<script>
+const API = "http://localhost:5000";
+function onScanSuccess(text) {
+  try {
+    const obj = JSON.parse(text);
+    if (!obj.id) throw new Error("No id");
+    fetch(API + "/pickup/" + obj.id, { method: "POST" })
+      .then(r => r.json()).then(d => {
+        document.getElementById("status").innerText = d.success ? ("✅ Выдан заказ #" + d.order_id) : "Ошибка при выдаче";
+      });
+  } catch(e) {
+    document.getElementById("status").innerText = "Некорректный QR";
+  }
+  scanner.clear();
+}
+const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+scanner.render(onScanSuccess);
+</script>
+</body>
+</html>
